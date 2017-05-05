@@ -1,1 +1,3 @@
-# parallel-programming-with-scala
+# Parallel Programming (with Scala)
+
+Solutions of exercises of Coursera's course.
