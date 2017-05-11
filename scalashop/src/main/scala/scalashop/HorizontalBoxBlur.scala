@@ -3,6 +3,8 @@ package scalashop
 import org.scalameter._
 import common._
 
+import scalashop.VerticalBoxBlur.blur
+
 object HorizontalBoxBlurRunner {
 
   val standardConfig = config(
@@ -42,9 +44,10 @@ object HorizontalBoxBlur {
    *  Within each row, `blur` traverses the pixels by going from left to right.
    */
   def blur(src: Img, dst: Img, from: Int, end: Int, radius: Int): Unit = {
-  // TODO implement this method using the `boxBlurKernel` method
-
-  ???
+    for {
+      x <- 0.until(src.width)
+      y <- from.until(clamp(end, 0, src.height))
+    } dst.update(x, y, boxBlurKernel(src, x, y, radius))
   }
 
   /** Blurs the rows of the source image in parallel using `numTasks` tasks.
@@ -54,9 +57,13 @@ object HorizontalBoxBlur {
    *  rows.
    */
   def parBlur(src: Img, dst: Img, numTasks: Int, radius: Int): Unit = {
-  // TODO implement using the `task` construct and the `blur` method
+    require(numTasks > 0, "Number of tasks must be greater than 0")
+    val step = math.max(src.height / numTasks, 1)
+    val tasks =
+      for {
+        row <- 0.until(src.height).by(step)
+      } yield task(blur(src, dst, row, row + step, radius))
 
-  ???
+    tasks.foreach(_.join())
   }
-
 }
