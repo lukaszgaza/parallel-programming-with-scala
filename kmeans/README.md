@@ -103,4 +103,37 @@ Run the algorithm and report the speedup:
 
 And now for the fun part -- the K-means algorithm has a lot of use-cases!
 
-In image processing applications, it can be used to reduce the size of the color palette, thus compressing the image. This is done by turning a true (color image)[http://www.wikiwand.com/en/Color_depth], where each pixel is encoded into 32 bits, into (indexed color)[http://www.wikiwand.com/en/Indexed_color], where each pixel can be encoded with just a few bits. This is done by using k-means to "cluster" the important colors in the image, thus reducing its palette from 24-bit (2^24 colors) to just 32 indexed colors, chosen from the 24-bit palette. Here, pixels from the image are the input vectors, and their coordinates are the different color channels.
+In image processing applications, it can be used to reduce the size of the color palette, thus compressing the image. This is done by turning a true [color image](http://www.wikiwand.com/en/Color_depth), where each pixel is encoded into 32 bits, into [indexed color](http://www.wikiwand.com/en/Indexed_color), where each pixel can be encoded with just a few bits. This is done by using k-means to "cluster" the important colors in the image, thus reducing its palette from 24-bit (2^24 colors) to just 32 indexed colors, chosen from the 24-bit palette. Here, pixels from the image are the input vectors, and their coordinates are the different color channels.
+
+Thanks to your k-means implementation, ScalaShop can now compress images! You can start ScalaShop by invoking:
+```
+> run-main kmeans.fun.ScalaShop
+```
+in sbt.
+
+But before you get to the fun part, you'll need to solve a mystery: why is ScalaShop so slow?. Have a look at the source code, in the fun package.
+
+If you can't find it, scroll down for a hint.
+
+Hint 1: look at the top of fun/IndexedColors.scala and see the comment.
+
+Scroll down for another hint.
+
+Hint 2: You should be able to make it almost x times faster, where x is the number of cores in your computer :)
+
+Scroll down for the final hint.
+
+Hint 3: The two collections could use a .par call, to make them parallel.
+
+After your changes, ScalaShop should be much faster. So, let's play!
+
+The k-means algorithm is very sensitive to the initial choice of means. There are three choice strategies implemented in ScalaShop:
+
+* Uniform Choice is the simplest strategy. It chooses n colors uniformly in the entire color space, regardless of the colors used in the image. If the image has a dominant color, the means created by this strategy will likely be very far away from the clusters formed by this dominant color. You can try setting the Uniform Choice strategy with 1, 10 and 30 steps. You will notice the initial choice is quite bad, but the quality improves as the k-means algorithm is applied in more steps.
+* Random Sampling is another simple strategy, but with better results. For the initial means, it randomly samples n colors from the image. This yields good results if the image has few dominant colors, but it cannot handle subtle nuances in the image. Again, if you try this strategy with 1, 10 and 30 k-means iteration steps, you will notice improvements as the k-means algorithm is ran more.
+* Uniform Random is the most complex strategy to pick means, but it also produces the best results. It works by uniformly splitting the color space in sub-spaces. It then counts the number of pixels that have colors belonging to that sub-space. Based on this number, it chooses a proportional number of means in the sub-space, by randomly sampling from the pixels in that sub-space. Therefore, if your image has dominant colors, this strategy will drop a proportional number of means for each dominant color, thus allowing the k-means algorithm to capture fine nuances.
+In the EPFL image now available in ScalaShop, the mountains are a good way to see how well each initial choice of means fares. You also have different strategies for deciding convergence:
+
+* Steps allows to run a fixed number of steps. After this, the k-means algorithm is stopped.
+* Eta corresponds to the means stability, as we showed earlier: if the means did not move much since the last iteration, the result is considered stable.
+* Sound-to-noise ratio is a more refined convergence strategy, which does not settle for stability but tries to minimize the difference between the true color image and the index color one. This strategy goes beyond Eta, but high Sound-to-noise ratios will prevent the k-means algorithm from finishing!
