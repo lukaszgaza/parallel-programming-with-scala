@@ -93,4 +93,12 @@ class ParallelParenthesesBalancingSuite extends FunSuite {
 
     check("(())", true)
   }
+
+  test("parBalance should work for given (()((())()))") {
+    def check(input: String, expected: Boolean) =
+      assert(parBalance(input.toArray, 1) == expected,
+        s"balance($input) should be $expected")
+
+    check("(()((())()))", true)
+  }
 }
