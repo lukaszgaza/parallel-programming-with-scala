@@ -111,14 +111,4 @@ object LineOfSight {
     val tree = upsweep(input, 1, input.length, threshold)
     downsweep(input, output, 0, tree)
   }
-
-  /*def upsweepSequential(input: Array[Float], from: Int, until: Int): Float = {
-    val angles = for {
-      i <- from until `until`
-    } yield {
-      if (i == 0) 0
-      else input(i) / i
-    }
-    angles.max
-  }*/
 }
