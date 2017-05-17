@@ -71,7 +71,40 @@ class KMeansSuite extends FunSuite {
     checkParClassify(points, means, expected)
   }
 
+  test("should correctly recalculate means") {
+    val p1 = new Point(1, 1, 0)
+    val p2 = new Point(1, -1, 0)
+    val p3 = new Point(-1, 1, 0)
+    val p4 = new Point(-1, -1, 0)
+    val points: GenSeq[Point] = IndexedSeq(p1, p2, p3, p4)
+    val oldMean1 = new Point(3, 0, 0)
+    val oldMean2 = new Point(-3, 0, 0)
+    val newMean1 = new Point(1, 0, 0)
+    val newMean2 = new Point(-1, 0, 0)
+
+    val newMeans = update(GenMap((oldMean1, GenSeq(p1, p2)), (oldMean2, GenSeq(p3, p4))), GenSeq(oldMean1, oldMean2))
+
+    assert(newMeans.head.x === newMean1.x)
+    assert(newMeans.head.y === newMean1.y)
+    assert(newMeans.head.z === newMean1.z)
+    assert(newMeans(1).x === newMean2.x)
+    assert(newMeans(1).y === newMean2.y)
+    assert(newMeans(1).z === newMean2.z)
+  }
+
+  test("should not converge if means diff a lot") {
+    val oldMean1 = new Point(3, 0, 0)
+    val oldMean2 = new Point(-3, 0, 0)
+    val newMean1 = new Point(1, 0, 0)
+    val newMean2 = new Point(-1, 0, 0)
+    assert(!converged(0.1)(GenSeq(oldMean1, oldMean2), GenSeq(newMean1, newMean2)))
+  }
+
+  test("should converge if means didn't change significantly") {
+    val oldMean1 = new Point(1.0001, 0, 0)
+    val oldMean2 = new Point(-1.0001, 0, 0)
+    val newMean1 = new Point(1, 0, 0)
+    val newMean2 = new Point(-1, 0, 0)
+    assert(converged(0.1)(GenSeq(oldMean1, oldMean2), GenSeq(newMean1, newMean2)))
+  }
 }
-
-
-  
