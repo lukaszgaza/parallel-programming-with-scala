@@ -44,35 +44,70 @@ package object barneshut {
   }
 
   case class Empty(centerX: Float, centerY: Float, size: Float) extends Quad {
-    def massX: Float = ???
-    def massY: Float = ???
-    def mass: Float = ???
-    def total: Int = ???
-    def insert(b: Body): Quad = ???
+    def massX: Float = centerX
+    def massY: Float = centerY
+    def mass: Float = 0
+    def total: Int = 0
+    def insert(b: Body): Quad = Leaf(centerX, centerY, size, Seq(b))
   }
 
   case class Fork(
     nw: Quad, ne: Quad, sw: Quad, se: Quad
   ) extends Quad {
-    val centerX: Float = ???
-    val centerY: Float = ???
-    val size: Float = ???
-    val mass: Float = ???
-    val massX: Float = ???
-    val massY: Float = ???
-    val total: Int = ???
+    val elements = Seq(nw, ne, sw, se)
+    val centerX: Float = nw.centerX + nw.size / 2
+    val centerY: Float = nw.centerY + nw.size / 2
+    val size: Float = 2 * nw.size
+    val mass: Float = elements.foldLeft(0F)(_ + _.mass)
+    val massX: Float = quadsMassCenter(centerX, mass, elements, xDirection =  true)
+    val massY: Float = quadsMassCenter(centerY, mass, elements, xDirection = false)
+    val total: Int = elements.foldLeft(0)(_ + _.total)
 
     def insert(b: Body): Fork = {
-      ???
+      if (b.x < centerX && b.y < centerY) Fork(nw.insert(b), ne, sw, se)
+      else if (b.x >= centerX && b.y < centerY) Fork(nw, ne.insert(b), sw, se)
+      else if (b.x < centerX && b.y >= centerY) Fork(nw, ne, sw.insert(b), se)
+      else Fork(nw, ne, sw, se.insert(b))
     }
   }
 
   case class Leaf(centerX: Float, centerY: Float, size: Float, bodies: Seq[Body])
   extends Quad {
-    val (mass, massX, massY) = (??? : Float, ??? : Float, ??? : Float)
-    val total: Int = ???
-    def insert(b: Body): Quad = ???
+    val mass: Float = bodies.foldLeft(0F)(_ + _.mass)
+    val massX: Float =  bodiesMassCenter(mass, bodies, xDirection = true)
+    val massY: Float =  bodiesMassCenter(mass, bodies, xDirection = false)
+    val total: Int = bodies.length
+
+    def insert(b: Body): Quad =
+      if (size <= minimumSize) Leaf(centerX, centerY, size, b +: bodies)
+      else {
+        val quadtreeSize = size / 2
+        val quadtreeRadius = quadtreeSize / 2
+        val fork = Fork(
+          Empty(centerX - quadtreeRadius, centerY - quadtreeRadius, quadtreeSize),
+          Empty(centerX + quadtreeRadius, centerY - quadtreeRadius, quadtreeSize),
+          Empty(centerX - quadtreeRadius, centerY + quadtreeRadius, quadtreeSize),
+          Empty(centerX + quadtreeRadius, centerY + quadtreeRadius, quadtreeSize)
+        )
+
+        (b +: bodies).foreach(fork.insert)
+
+        fork
+      }
+
   }
+
+  private def quadsMassCenter(center: Float, mass: Float, bodies: Seq[Quad], xDirection: Boolean) =
+    if (mass == 0) center
+    else bodies.foldLeft(0f) {
+      case (sum, quad) => sum + quad.mass * (if (xDirection) quad.massX else quad.massY)
+    } / mass
+
+  private def bodiesMassCenter(mass: Float, bodies: Seq[Body], xDirection: Boolean) =
+    bodies.foldLeft(0f) {
+      case (sum, body) => sum + body.mass * (if (xDirection) body.x else body.y)
+    } / mass
+
 
   def minimumSize = 0.00001f
 
