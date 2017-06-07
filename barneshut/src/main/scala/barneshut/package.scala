@@ -158,9 +158,18 @@ package object barneshut {
           // no force
         case Leaf(_, _, _, bodies) =>
           // add force contribution of each body by calling addForce
+          bodies.foreach(body => addForce(body.mass, body.x, body.y))
         case Fork(nw, ne, sw, se) =>
           // see if node is far enough from the body,
+          if (quad.size / distance(quad.massX, quad.massY, x, y) < theta)
+            addForce(quad.mass, quad.massX, quad.massY)
           // or recursion is needed
+          else {
+            traverse(nw)
+            traverse(ne)
+            traverse(sw)
+            traverse(se)
+          }
       }
 
       traverse(quad)
